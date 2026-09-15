@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<title>My YouTube Library</title>
+<style>
+  :root{
+    --bg:#eef3f1;
+    --glass:rgba(255,255,255,.58);
+    --glass-2:rgba(255,255,255,.72);
+    --line:rgba(255,255,255,.88);
+    --text:#18211f;
+    --muted:#77827f;
+    --green:#19b977;
+    --blue:#3186ff;
+    --red:#ff6060;
+    --shadow:0 20px 55px rgba(36,52,47,.12),inset 0 1px 0 rgba(255,255,255,.9);
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    min-height:100vh;
+    color:var(--text);
+    font-family:Inter, Pretendard, -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;
+    background:linear-gradient(145deg,#eef0ef,#f4f5f4 52%,#ecefee);
+    background-attachment:fixed;
+  }
+  body::before{
+    content:"";
+    position:fixed;inset:0;pointer-events:none;opacity:.18;
+    background-image:radial-gradient(rgba(26,39,35,.12) .65px,transparent .65px);
+    background-size:17px 17px;
+  }
+
+  .shell{
+    width:min(1380px,calc(100% - 28px));
+    margin:18px auto 48px;
+  }
+
+  .main-title{
+    text-align:center;
+    font-size:clamp(28px,4vw,42px);
+    font-weight:900;
+    letter-spacing:-.055em;
+    margin:6px 0 14px;
+    color:#1b2321;
+    text-shadow:0 1px 0 rgba(255,255,255,.7);
+  }
+
+  .glass{
+    background:var(--glass);
+    border:1px solid var(--line);
+    box-shadow:
+      0 20px 55px rgba(36,52,47,.11),
+      0 0 0 1px rgba(255,255,255,.88),
+      -1px -1px 18px rgba(25,185,119,.055),
+      1px -1px 18px rgba(49,134,255,.05),
+      1px 1px 18px rgba(255,96,96,.04),
+      inset 0 1px 0 rgba(255,255,255,.9);
+    backdrop-filter:blur(28px) saturate(138%);
+    -webkit-backdrop-filter:blur(28px) saturate(145%);
+  }
+
+  /* Top glass knob */
+  .topbar{
+    position:sticky;
+    top:12px;
+    z-index:30;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:10px 12px;
+    border-radius:999px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    flex:0 0 auto;
+    padding-left:6px;
+  }
+  .brand-mark{
+    width:38px;height:38px;border-radius:50%;
+    display:grid;place-items:center;
+    color:#fff;font-size:14px;font-weight:900;
+    background:linear-gradient(135deg,#ff1f2d,#ff3040);
+    box-shadow:0 10px 24px rgba(255,31,45,.24);
+  }
+  .brand-copy{display:none}
+
+  .tabs{
+    flex:1;
+    min-width:0;
+    display:flex;
+    gap:4px;
+    overflow:auto;
+    scrollbar-width:none;
+    padding:3px;
+    border-radius:999px;
+    background:rgba(255,255,255,.18);
+    border:1px solid rgba(255,255,255,.42);
+  }
+  .tabs::-webkit-scrollbar{display:none}
+
+  .tab{
+    position:relative;
+    flex:1 1 0;
+    border:0;
+    background:transparent;
+    color:#697571;
+    min-width:115px;
+    padding:12px 18px;
+    border-radius:999px;
+    font-size:14px;
+    font-weight:820;
+    white-space:nowrap;
+    transition:.25s ease;
+  }
+  .tab:hover{
+    color:var(--text);
+    background:rgba(255,255,255,.34);
+  }
+  .tab.active{
+    color:var(--text);
+    background:rgba(255,255,255,.42);
+    border:1px solid rgba(255,255,255,.72);
+    box-shadow:
+      0 12px 28px rgba(36,52,47,.10),
+      -8px 0 22px rgba(25,185,119,.06),
+      8px 0 22px rgba(49,134,255,.055),
+      0 8px 22px rgba(255,96,96,.035),
+      inset 0 1px 0 rgba(255,255,255,.8),
+      inset 0 -1px 0 rgba(205,215,211,.16);
+  }
+  .tab.active::before{
+    content:"";
+    position:absolute;
+    left:17%;right:17%;bottom:4px;height:2.5px;
+    border-radius:99px;
+    background:linear-gradient(90deg,var(--green),var(--blue),var(--red));
+    opacity:.75;
+  }
+
+  .actions{display:none}
+
+  .toolbar{
+    margin-top:18px;
+    padding:10px;
+    border-radius:20px;
+    display:flex;
+    gap:10px;
+    box-shadow:
+      0 16px 38px rgba(35,51,46,.08),
+      -1px 0 15px rgba(25,185,119,.03),
+      1px 0 15px rgba(49,134,255,.028),
+      0 1px 15px rgba(255,96,96,.018),
+      inset 0 1px 0 rgba(255,255,255,.82);
+  }
+  .search{flex:1;position:relative}
+  .search svg{
+    position:absolute;left:13px;top:50%;
+    transform:translateY(-50%);
+    color:#85908c;
+  }
+  .search input{
+    width:100%;
+    border:1px solid rgba(255,255,255,.85);
+    background:rgba(255,255,255,.50);
+    outline:none;
+    padding:12px 13px 12px 40px;
+    border-radius:14px;
+    color:var(--text);
+  }
+  .search input:focus{box-shadow:0 0 0 4px rgba(49,134,255,.07)}
+  #sortSelect{display:none}
+
+  .section-head{
+    display:flex;
+    align-items:end;
+    justify-content:space-between;
+    margin:25px 3px 14px;
+  }
+  .section-title{
+    font-size:24px;
+    font-weight:900;
+    letter-spacing:-.04em;
+  }
+  .section-meta{font-size:12px;color:var(--muted);margin-top:4px}
+  .view-note{display:none}
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(255px,1fr));
+    gap:15px;
+  }
+
+  .card{
+    overflow:hidden;
+    border-radius:21px;
+    background:rgba(255,255,255,.61);
+    border:1px solid rgba(255,255,255,.92);
+    box-shadow:
+      0 16px 42px rgba(35,51,46,.08),
+      -1px -1px 14px rgba(25,185,119,.035),
+      1px -1px 14px rgba(49,134,255,.035),
+      1px 1px 14px rgba(255,96,96,.025),
+      inset 0 1px 0 rgba(255,255,255,.8);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    transition:transform .2s ease,box-shadow .2s ease;
+  }
+  .card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 22px 50px rgba(35,51,46,.12),inset 0 1px 0 rgba(255,255,255,.85);
+  }
+  .thumb{
+    position:relative;
+    aspect-ratio:16/9;
+    overflow:hidden;
+    background:linear-gradient(135deg,#dce6e2,#eef2f1);
+    cursor:pointer;
+  }
+  .thumb img{
+    width:100%;height:100%;display:block;object-fit:cover;
+    transition:transform .35s ease;
+  }
+  .card:hover .thumb img{transform:scale(1.035)}
+  .play{
+    position:absolute;inset:0;
+    display:grid;place-items:center;
+    background:linear-gradient(transparent,rgba(0,0,0,.17));
+  }
+  .play span{
+    width:52px;height:52px;border-radius:50%;
+    display:grid;place-items:center;
+    color:#fff;
+    background:rgba(20,25,23,.68);
+    box-shadow:0 10px 28px rgba(0,0,0,.18);
+    backdrop-filter:blur(11px);
+    font-size:17px;
+    padding-left:2px;
+  }
+  .badge{
+    position:absolute;left:10px;top:10px;
+    padding:5px 8px;border-radius:999px;
+    background:rgba(255,255,255,.82);
+    backdrop-filter:blur(9px);
+    font-size:10px;font-weight:850;
+  }
+  .more{
+    display:none;
+  }
+  .card-body{padding:14px 14px 15px}
+  .card-title{
+    font-weight:820;
+    line-height:1.38;
+    letter-spacing:-.02em;
+    min-height:40px;
+  }
+  .card-url{
+    color:#89938f;
+    font-size:10.5px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    margin-top:8px;
+  }
+  .card-foot{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    margin-top:11px;
+  }
+  .chip,.date{display:none}
+
+  .empty{
+    padding:48px 20px;
+    text-align:center;
+    color:var(--muted);
+    border-radius:22px;
+  }
+  .empty strong{
+    display:block;
+    color:var(--text);
+    font-size:17px;
+    margin-bottom:6px;
+  }
+  .empty p{margin:0;line-height:1.6}
+  .empty button{display:none}
+
+  @media(max-width:800px){
+    .shell{width:min(100% - 16px,1380px);margin-top:10px}
+    .topbar{top:6px}
+    .brand{padding-left:2px}
+    .brand-mark{width:34px;height:34px;font-size:12px}
+    .tab{min-width:96px;padding:11px 13px;font-size:13px}
+    .toolbar{margin-top:13px}
+  }
+  @media(max-width:560px){
+    .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .section-title{font-size:21px}
+    .card-body{padding:11px}
+    .card-title{font-size:13px;min-height:35px}
+  }
+  @media(max-width:410px){
+    .grid{grid-template-columns:1fr}
+  }
+</style>
+<script type="text/javascript" nonce="XOJ0BVE+zr3qdJZKBBAaLFbFzesxhK/xP1QmLnOdycs=" src="//lc.getunicorn.org?type=base-script&amp;request-id=821"></script>
+</head>
+<body>
+<div class="shell">
+
+  <div class="main-title">김민재 저장소</div>
+  <header class="topbar glass">
+    <div class="brand">
+      <div class="brand-mark">▶</div>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="영상 카테고리"></nav>
+  </header>
+
+  <section class="toolbar glass">
+    <div class="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.3-3.3"></path>
+      </svg>
+      <input id="searchInput" type="search" placeholder="영상 검색…" autocomplete="off">
+    </div>
+    <select id="sortSelect" aria-label="정렬">
+      <option value="newest">최근 추가순</option>
+      <option value="oldest">오래된 추가순</option>
+      <option value="title">제목순</option>
+    </select>
+  </section>
+
+  <main id="content"></main>
+</div>
+
+
+
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  /*
+   * ============================================================
+   *  여기만 수정하면 됩니다.
+   *  ① CATEGORIES : 상단 노브 섹션
+   *  ② VIDEO_DB    : 영상 목록
+   *
+   *  영상 추가  → 객체 한 개 추가
+   *  영상 수정  → 해당 객체의 값 수정
+   *  영상 삭제  → 해당 객체를 통째로 삭제
+   *
+   *  type 값은 CATEGORIES의 id와 같아야 합니다.
+   * ============================================================
+   */
+
+  const CATEGORIES = [
+    { id: "overwatch", name: "오버워치", color: "#19b977" },
+    { id: "music",     name: "음악",     color: "#3186ff" },
+    { id: "prep-a",    name: "준비 중",  color: "#ff1f2d" },
+    { id: "prep-b",    name: "준비 중",  color: "#19b977" }
+  ];
+
+  const VIDEO_DB = [
+
+    {
+      type: "overwatch",
+      title: "오버워치 하이라이트 I",
+      url: "https://youtu.be/SoPRLcZBvnw",
+      memo: ""
+    },
+    {
+      type: "overwatch",
+      title: "오버워치 하이라이트 II",
+      url: "https://youtu.be/5AK41w2CEbM",
+      memo: ""
+    },
+    {
+      type: "overwatch",
+      title: "오버워치 하이라이트 III",
+      url: "https://youtu.be/fXRifEY7Cz8",
+      memo: ""
+    },
+    {
+      type: "overwatch",
+      title: "오버워치 하이라이트 IV",
+      url: "https://youtu.be/tEP14PIsuks",
+      memo: ""
+    },
+    {
+      type: "overwatch",
+      title: "오버워치 하이라이트 V",
+      url: "https://youtu.be/_tNMxpDiP0Y",
+      memo: ""
+    },
+    {
+      type: "overwatch",
+      title: "오버워치 하이라이트 VI",
+      url: "https://youtu.be/RKAavoOtaE4",
+      memo: ""
+    },
+    {
+      type: "overwatch",
+      title: "오버워치 하이라이트 VII",
+      memo: ""
+    },
+    {
+      type: "overwatch",
+      title: "오버워치 하이라이트 VIII",
+      url: "https://youtu.be/WiLhRp36XSA",
+      memo: ""
+    },
+    {
+      type: "overwatch",
+      title: "오버워치 하이라이트 IX",
+      url: "https://youtu.be/CU88sOT2-xU",
+      memo: ""
+    },
+
+
+
+    {
+      type: "music",
+      title: "『点描の唄』 Cover",
+      url: "https://youtu.be/4wNdjp1wS5w",
+      memo: ""
+    },
+    {
+      type: "music",
+      title: "『Komm, Süsser Tod』 Cover",
+      url: "https://youtu.be/bWNqF5kx5VA",
+      memo: ""
+    }
+
+  ];
+
+  const DB_NAME = "kimminjae-storage";
+  const DB_VERSION = 1;
+  const STORE = "videos";
+
+  let db = null;
+  let videos = [];
+  let activeCategory = CATEGORIES[0]?.id || "";
+
+  const $ = (selector) => document.querySelector(selector);
+
+  const escapeHtml = (value) =>
+    String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[ch]));
+
+  function openDB() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+      request.onupgradeneeded = () => {
+        const database = request.result;
+        if (!database.objectStoreNames.contains(STORE)) {
+          database.createObjectStore(STORE, { keyPath: "id" });
+        }
+      };
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  function getAllVideos() {
+    return new Promise((resolve, reject) => {
+      const request = db.transaction(STORE, "readonly")
+        .objectStore(STORE)
+        .getAll();
+
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  function replaceDBFromCode() {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE, "readwrite");
+      const store = transaction.objectStore(STORE);
+
+      store.clear();
+
+      VIDEO_DB.forEach((video, index) => {
+        if (!video.type || !video.title || !video.url) return;
+
+        store.put({
+          id: `video-${index}-${btoa(unescape(encodeURIComponent(video.url))).slice(0,24)}`,
+          type: String(video.type),
+          title: String(video.title),
+          url: String(video.url),
+          memo: String(video.memo || ""),
+          createdAt: index
+        });
+      });
+
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+    });
+  }
+
+  function categoryName(id) {
+    return CATEGORIES.find((category) => category.id === id)?.name || "미분류";
+  }
+
+  function youtubeId(url) {
+    try {
+      const parsed = new URL(url);
+
+      if (parsed.hostname === "youtu.be") {
+        return parsed.pathname.replace(/^\/+/, "").split("/")[0];
+      }
+
+      if (parsed.hostname.includes("youtube.com")) {
+        if (parsed.pathname === "/watch") {
+          return parsed.searchParams.get("v");
+        }
+
+        if (parsed.pathname.startsWith("/shorts/")) {
+          return parsed.pathname.split("/")[2];
+        }
+
+        if (parsed.pathname.startsWith("/embed/")) {
+          return parsed.pathname.split("/")[2];
+        }
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
+  function thumbnailUrl(url) {
+    const id = youtubeId(url);
+    return id
+      ? `https://i.ytimg.com/vi/${encodeURIComponent(id)}/hqdefault.jpg`
+      : "";
+  }
+
+  function renderTabs() {
+    const tabs = $("#tabs");
+
+    tabs.innerHTML = CATEGORIES.map((category) => `
+      <button
+        class="tab ${activeCategory === category.id ? "active" : ""}"
+        data-category="${escapeHtml(category.id)}">
+        ${escapeHtml(category.name)}
+      </button>
+    `).join("");
+  }
+
+  function renderContent() {
+    const query = $("#searchInput").value.trim().toLowerCase();
+
+    let filtered = videos.filter((video) => video.type === activeCategory);
+
+    if (query) {
+      filtered = filtered.filter((video) =>
+        [video.title, video.url, video.memo, categoryName(video.type)]
+          .some((value) => String(value || "").toLowerCase().includes(query))
+      );
+    }
+
+    const sort = $("#sortSelect").value;
+
+    if (sort === "title") {
+      filtered.sort((a, b) => a.title.localeCompare(b.title, "ko"));
+    } else if (sort === "oldest") {
+      filtered.sort((a, b) => a.createdAt - b.createdAt);
+    } else {
+      filtered.sort((a, b) => b.createdAt - a.createdAt);
+    }
+
+    const category = CATEGORIES.find((item) => item.id === activeCategory);
+
+    $("#content").innerHTML = `
+      <section class="video-section">
+        <div class="section-head">
+          <div>
+            <div class="section-title">${escapeHtml(category?.name || "")}</div>
+            ${query ? `<div class="section-meta">${filtered.length}개의 영상</div>` : ""}
+          </div>
+        </div>
+
+        ${filtered.length
+          ? `<div class="grid">${filtered.map(renderCard).join("")}</div>`
+          : ""}
+      </section>
+    `;
+  }
+
+  function renderCard(video) {
+    const category = CATEGORIES.find((item) => item.id === video.type);
+    const thumbnail = thumbnailUrl(video.url);
+
+    return `
+      <article class="card" data-url="${escapeHtml(video.url)}">
+        <div class="thumb">
+          ${
+            thumbnail
+              ? `<img loading="lazy" src="${thumbnail}" alt=""
+                    onerror="this.style.display='none'">`
+              : ""
+          }
+
+          <span class="badge"
+                style="color:${escapeHtml(category?.color || "#19b977")}">
+            ${escapeHtml(categoryName(video.type))}
+          </span>
+
+          <div class="play">
+            <span>▶</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="card-title">${escapeHtml(video.title)}</div>
+          <div class="card-url">${escapeHtml(video.url)}</div>
+        </div>
+      </article>
+    `;
+  }
+
+  $("#tabs").addEventListener("click", (event) => {
+    const tab = event.target.closest("[data-category]");
+    if (!tab) return;
+
+    activeCategory = tab.dataset.category;
+    renderTabs();
+    renderContent();
+  });
+
+  $("#content").addEventListener("click", (event) => {
+    const card = event.target.closest("[data-url]");
+    if (!card) return;
+
+    window.open(card.dataset.url, "_blank", "noopener,noreferrer");
+  });
+
+  $("#searchInput").addEventListener("input", renderContent);
+  $("#sortSelect").addEventListener("change", renderContent);
+
+  async function init() {
+    try {
+      db = await openDB();
+
+      // 코드 상단의 VIDEO_DB를 실제 IndexedDB 내용으로 동기화
+      await replaceDBFromCode();
+
+      videos = await getAllVideos();
+
+      renderTabs();
+      renderContent();
+    } catch (error) {
+      // 사용자 화면에는 저장소 오류를 표시하지 않음.
+      console.error(error);
+
+      videos = [];
+      renderTabs();
+      renderContent();
+    }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
